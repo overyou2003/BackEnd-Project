@@ -1,87 +1,385 @@
-// SQLite3 CRUD operations
-// npm install sqlite3
-// Create a Bood.sqlite file in Database folder
-// Run this file with node CRUDBookSQLite.js
-// Test with Postman
+
+
+
+
 
 const express = require('express');
-const sqlite3 = require('sqlite3');
+const Sequelize = require('sequelize');
 const app = express();
 
-// connect to database
-const db = new sqlite3.Database('./Database/Book.sqlite');
 
-// parse incoming requests
 app.use(express.json());
 
-// create books table if it doesn't exist
-db.run(`CREATE TABLE IF NOT EXISTS BOOKS (
-    id INTEGER PRIMARY KEY,
-    title TEXT,
-    author TEXT
-)`);
-
-// route to get all books
-app.get('/books', (req, res) => {
-    db.all('SELECT * FROM books', (err, rows) => {
-        if (err) {
-            res.status(500).send(err);
-        } else {
-            res.json(rows);
-        }
-    });
+//TABLE USER
+const sequelize_user = new Sequelize('database' , 'username' , 'password', {
+    host: 'localhost' ,
+    dialect: 'sqlite',
+    storage: './Database/users.sqlite'
 });
 
-// route to get a book by id
-app.get('/books/:id', (req, res) => {
-    db.get('SELECT * FROM books WHERE id = ?', req.params.id, (err, row) => {
-        if (err) {
-            res.status(500).send(err);
-        } else {
-            if (!row) {
-                res.status(404).send('Book not found');
-            } else {
-                res.json(row);
-            }
-        }
-    });
+const user = sequelize_user.define('user', {
+    id: {
+        type: Sequelize.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
+    },
+    title: {
+        type: Sequelize.STRING,
+        allowNull: false
+    },
+    author: {
+        type: Sequelize.STRING,
+        allowNull: false
+    },
+    
+
+    
 });
 
-// route to create a new book
-app.post('/books', (req, res) => {
-    const book = req.body;
-    db.run('INSERT INTO books (title, author) VALUES (?, ?)', book.title, book.author, function(err) {
-      if (err) {
+//TABLE COMMENT
+const sequelize_comments= new Sequelize('database' , 'username' , 'password', {
+  host: 'localhost' ,
+  dialect: 'sqlite',
+  storage: './Database/comments.sqlite'
+});
+
+const comment = sequelize_comments.define('comment', {
+  comment_id: {
+      type: Sequelize.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+  },
+  content: {
+      type: Sequelize.STRING,
+      allowNull: false
+  },
+  post_id: {
+      type: Sequelize.INTEGER,
+      allowNull: false
+  },
+  user_id: {
+    type: Sequelize.INTEGER,
+    allowNull: false
+}
+});
+
+//TABLE LIKE
+const sequelize_like = new Sequelize('database' , 'username' , 'password', {
+  host: 'localhost' ,
+  dialect: 'sqlite',
+  storage: './Database/likes.sqlite'
+});
+
+const like = sequelize_like.define('like', {
+  like_id: {
+      type: Sequelize.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+  },
+  post_id: {
+      type: Sequelize.INTEGER,
+      allowNull: false
+  },
+  user_id: {
+    type: Sequelize.INTEGER,
+    allowNull: false
+  }
+});
+
+
+
+//TABLE POST
+const sequelize_post = new Sequelize('database' , 'username' , 'password', {
+  host: 'localhost' ,
+  dialect: 'sqlite',
+  storage: './Database/posts.sqlite'
+});
+
+const post = sequelize_post.define('like', {
+  post_id: {
+      type: Sequelize.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+  },
+  user_id: {
+      type: Sequelize.INTEGER,
+      allowNull: false
+  },
+  title: {
+      type: Sequelize.STRING,
+      allowNull: false
+  },
+  CompositionEvent: {
+    type: Sequelize.STRING,
+    allowNull: false
+  }  
+});
+
+sequelize_User.sync();
+sequelize_comments.sync();
+sequelize_like.sync();
+sequelize_post.sync();
+
+
+
+function User(user){
+
+  app.get('/books', (req,res) => {
+    user.findAll().then(books => {
+          res.json(books);
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+
+app.get('/book/:id', (req, res) => {
+  user.findByPk(req.params.id).then(book => {
+        if (!book) {
+            res.status(404).send('Book not found');
+        } else {
+            res.json(book);
+        }
+    }).catch(err => {
         res.status(500).send(err);
-      } else {
-        book.id = this.lastID;
-        res.send(book);
-      }
     });
 });
 
-// route to update a book
-app.put('/books/:id', (req, res) => {
-  const book = req.body;
-  db.run('UPDATE books SET title = ?, author = ? WHERE id = ?', book.title, book.author, req.params.id, function(err) {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.send(book);
-    }
-  });
+app.post('/book_Post', (req, res) => {
+  user.create(req.body).then(book => {
+        res.send(book);
+    }).catch(err => {
+        res.status(500).send(err);
+    });
 });
 
-// 
-app.delete('/books/:id', (req, res) => {
-  db.run('DELETE FROM books WHERE id = ?', req.params.id, function(err) {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.send({});
-    }
-  });
+app.put('/book_Update/:id' , (req, res) => {
+  user.findByPk(req.params.id).then(book => {
+        if (!book) {
+            res.status(404).send('Book not found');
+        } else {
+            book.update(req.body).then(() => {
+                res.send(book);
+            }).catch(err => {
+                res.status(500).send(err);
+            });
+        }
+    }).catch(err => {
+        res.status(500).send(err);
+    });
 });
+
+app.delete('/book_Delete/:id' , (req, res) => {
+  user.findByPk(req.params.id).then(book => {
+        if (!book) {
+            res.status(400).send('Book not found');
+        } else {
+            book.destroy().then(() => {
+                res.send({});
+            }).catch(err => {
+                res.status(500).send(err);
+            });
+        }
+}).catch(err => {
+    res.status(500).send(err);
+});
+});
+}
+
+function Comment(comment){
+
+  app.get('/comments', (req,res) => { 
+    comment.findAll().then(Comment => {
+          res.json(Comment);
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.get('/comment/:id', (req, res) => {
+    comment.findByPk(req.params.id).then(Comment => {
+          if (!Comment) {
+              res.status(404).send('Comment not found');
+          } else {
+              res.json(Comment);
+          }
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.post('/comment_Post', (req, res) => {
+    comment.create(req.body).then(Comment => {
+          res.send(Comment);
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.put('/comment_Update/:id' , (req, res) => {
+    comment.findByPk(req.params.id).then(Comment => {
+          if (!Comment) {
+              res.status(404).send('Comment not found');
+          } else {
+            Comment.update(req.body).then(() => {
+                  res.send(Comment);
+              }).catch(err => {
+                  res.status(500).send(err);
+              });
+          }
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.delete('/comment_Delete/:id' , (req, res) => {
+    comment.findByPk(req.params.id).then(Comment => {
+          if (!Comment) {
+              res.status(400).send('Comment not found');
+          } else {
+            Comment.destroy().then(() => {
+                  res.send({});
+              }).catch(err => {
+                  res.status(500).send(err);
+              });
+          }
+  }).catch(err => {
+      res.status(500).send(err);
+  });
+  });
+}
+
+function Like(like){
+
+  app.get('/likes', (req,res) => { 
+    like.findAll().then(Like => {
+          res.json(Like);
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.get('/like/:id', (req, res) => {
+    like.findByPk(req.params.id).then(Like => {
+          if (!Like) {
+              res.status(404).send('Like not found');
+          } else {
+              res.json(Like);
+          }
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.post('/like_Post', (req, res) => {
+    like.create(req.body).then(Like => {
+          res.send(Like);
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.put('/like_Update/:id' , (req, res) => {
+    like.findByPk(req.params.id).then(Like => {
+          if (!Like) {
+              res.status(404).send('Like not found');
+          } else {
+            Like.update(req.body).then(() => {
+                  res.send(Like);
+              }).catch(err => {
+                  res.status(500).send(err);
+              });
+          }
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.delete('/like_Delete/:id' , (req, res) => {
+    like.findByPk(req.params.id).then(Like => {
+          if (!Like) {
+              res.status(400).send('Like not found');
+          } else {
+            Like.destroy().then(() => {
+                  res.send({});
+              }).catch(err => {
+                  res.status(500).send(err);
+              });
+          }
+  }).catch(err => {
+      res.status(500).send(err);
+  });
+  });
+}
+
+function Post(post){
+
+  app.get('/posts', (req,res) => { 
+    post.findAll().then(Post => {
+          res.json(Post);
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.get('/post/:id', (req, res) => {
+    post.findByPk(req.params.id).then(Post => {
+          if (!Post) {
+              res.status(404).send('Post not found');
+          } else {
+              res.json(Post);
+          }
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.post('/post_Post', (req, res) => {
+    post.create(req.body).then(Post => {
+          res.send(Post);
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.put('/post_Update/:id' , (req, res) => {
+    post.findByPk(req.params.id).then(Post => {
+          if (!Post) {
+              res.status(404).send('Post not found');
+          } else {
+            Post.update(req.body).then(() => {
+                  res.send(Post);
+              }).catch(err => {
+                  res.status(500).send(err);
+              });
+          }
+      }).catch(err => {
+          res.status(500).send(err);
+      });
+  });
+  
+  app.delete('/post_Delete/:id' , (req, res) => {
+    post.findByPk(req.params.id).then(Post => {
+          if (!Post) {
+              res.status(400).send('Post not found');
+          } else {
+            Post.destroy().then(() => {
+                  res.send({});
+              }).catch(err => {
+                  res.status(500).send(err);
+              });
+          }
+  }).catch(err => {
+      res.status(500).send(err);
+  });
+  });
+}
+
+
+
+User(user)
+Comment(comment)
+Like(like)
+Post(post)
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Listening on port ${port}...`));
